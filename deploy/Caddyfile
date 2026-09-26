@@ -1,0 +1,11 @@
+# Template for a future HOST-INSTALLED Caddy service. Set PORTFOLIO_DOMAIN after approval.
+{$PORTFOLIO_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8088
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        # Enable HSTS only after checking HTTPS and the chosen domain.
+        # Strict-Transport-Security "max-age=31536000"
+    }
+}

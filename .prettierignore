@@ -1,0 +1,9 @@
+node_modules
+dist
+.dist
+.render
+playwright-report
+test-results
+backups
+package-lock.json
+backend/package-lock.json

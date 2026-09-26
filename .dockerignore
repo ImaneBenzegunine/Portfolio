@@ -1,0 +1,14 @@
+node_modules
+dist
+.dist
+.render
+.git
+.env
+.env.*
+backups
+data
+**/*.sqlite*
+test-results
+playwright-report
+sources
+*.tsbuildinfo

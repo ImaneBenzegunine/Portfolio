@@ -1,0 +1,7 @@
+# Future VM deployment only. No resources are created by this file.
+# Usage: docker compose -f compose.yaml -f deploy/compose.azure.yaml up -d --no-build --wait
+services:
+  frontend:
+    image: ${REGISTRY:?Set the approved registry}/imane-portfolio-frontend:${IMAGE_TAG:?Set a version tag}
+  backend:
+    image: ${REGISTRY:?Set the approved registry}/imane-portfolio-backend:${IMAGE_TAG:?Set a version tag}
