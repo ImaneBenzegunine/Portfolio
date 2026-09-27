@@ -4,7 +4,7 @@ services:
     build:
       context: .
       args:
-        SITE_URL: ${SITE_URL:-https://imanebenzegunine.com}
+        SITE_URL: ${SITE_URL:-http://localhost:8088}
         PUBLIC_EMAIL: ${PUBLIC_EMAIL:-}
         CV_AVAILABLE: ${CV_AVAILABLE:-false}
     ports:

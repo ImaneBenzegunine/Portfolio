@@ -1,5 +1,6 @@
 import { contactSchema } from "../backend/validation.mjs";
 import type { DeliveryEnv, Inquiry, OwnerEmail } from "./types.ts";
+import { deliveryConfigured, providerName, ProviderError, sendFormcarry, FREE_WINDOW, FREE_ATTEMPTS } from "./provider.ts";
 
 const LEASE_MS = 10 * 60000;
 const MAX_ATTEMPTS = 8;
@@ -22,12 +23,13 @@ export function ownerEmail(row: Inquiry, env: DeliveryEnv): OwnerEmail {
   };
 }
 
-export async function deliverOne(env: DeliveryEnv, now = Date.now()) {
+export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = fetch) {
   const db = env.CONTACT_DB;
   // Run retention even when sending is disabled.
   await db.batch([
     db.prepare("DELETE FROM inquiries WHERE expires_at <= ?").bind(now),
     db.prepare("DELETE FROM rate_limits WHERE expires <= ?").bind(now),
+    db.prepare("DELETE FROM delivery_attempts WHERE created <= ?").bind(now - FREE_WINDOW),
     db
       .prepare(
         `UPDATE inquiries SET status='failed', lease_token=NULL,
@@ -35,21 +37,22 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now()) {
       )
       .bind(now, MAX_ATTEMPTS),
   ]);
-  if (
-    env.DELIVERY_ENABLED !== "true" ||
-    !env.EMAIL ||
-    !address.safeParse(env.MAIL_FROM).success ||
-    !address.safeParse(env.MAIL_TO).success
-  ) {
-    await db.prepare("DELETE FROM worker_state WHERE id=1").run();
+  if (!deliveryConfigured(env)) {
+    await db.prepare("UPDATE worker_state SET last_tick=0 WHERE id=1").run();
     return;
   }
+  const provider = providerName(env);
+  const control = await db.prepare("SELECT provider, blocked_until FROM worker_state WHERE id=1")
+    .first<{ provider: string; blocked_until: number }>();
+  if (control?.provider === provider && control.blocked_until > now) return;
   await db
     .prepare(
-      `INSERT INTO worker_state (id,last_tick) VALUES (1,?)
-    ON CONFLICT(id) DO UPDATE SET last_tick=excluded.last_tick`,
+      `INSERT INTO worker_state (id,last_tick,provider) VALUES (1,?,?)
+    ON CONFLICT(id) DO UPDATE SET last_tick=excluded.last_tick,
+      blocked_until=CASE WHEN worker_state.provider=excluded.provider THEN worker_state.blocked_until ELSE 0 END,
+      provider=excluded.provider`,
     )
-    .bind(now)
+    .bind(now, provider)
     .run();
   const token = crypto.randomUUID();
   // Claim exactly one message per tick to keep CPU and D1 work small on Workers Free.
@@ -65,16 +68,33 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now()) {
     .bind(token, now + LEASE_MS, now, MAX_ATTEMPTS, now, now)
     .first<Inquiry>();
   if (!row) return;
+  if (provider === "formcarry") {
+    const reserved = await db.prepare(`INSERT INTO delivery_attempts (id,created)
+      SELECT ?,? WHERE (SELECT COUNT(*) FROM delivery_attempts WHERE created>?) < ? RETURNING id`)
+      .bind(token, now, now - FREE_WINDOW, FREE_ATTEMPTS).first();
+    if (!reserved) {
+      await db.prepare(`UPDATE inquiries SET status='pending', attempts=attempts-1,
+        lease_token=NULL, lease_until=0, last_error='free_allowance_exhausted'
+        WHERE id=? AND lease_token=?`).bind(row.id, token).run();
+      await db.prepare("UPDATE worker_state SET last_tick=0 WHERE id=1").run();
+      return;
+    }
+  }
   try {
-    await env.EMAIL.send(ownerEmail(row, env));
-  } catch {
+    if (provider === "formcarry") await sendFormcarry(row, env, fetcher);
+    else await env.EMAIL!.send(ownerEmail(row, env));
+  } catch (error) {
+    const permanent = error instanceof ProviderError && error.permanent;
+    if (error instanceof ProviderError && error.pauseMs > 0)
+      await db.prepare("UPDATE worker_state SET last_tick=0,blocked_until=? WHERE id=1")
+        .bind(now + error.pauseMs).run();
     await db
       .prepare(
         `UPDATE inquiries SET status=?, next_attempt=?, lease_until=0,
       lease_token=NULL, last_error='provider_rejected_or_unavailable' WHERE id=? AND lease_token=?`,
       )
       .bind(
-        row.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
+        permanent || row.attempts >= MAX_ATTEMPTS ? "failed" : "pending",
         now + Math.min(3600000, 60000 * 2 ** row.attempts),
         row.id,
         token,

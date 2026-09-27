@@ -4,6 +4,7 @@ export interface ContactEnv {
   PUBLIC_ORIGIN?: string;
   RETENTION_DAYS?: string;
   RATE_LIMIT_SALT?: string;
+  DELIVERY_PROVIDER?: string;
 }
 
 export interface Inquiry {
@@ -31,8 +32,10 @@ export interface OwnerEmail {
 
 export interface DeliveryEnv {
   CONTACT_DB: D1Database;
-  EMAIL: Pick<SendEmail, "send">;
+  EMAIL?: Pick<SendEmail, "send">;
   DELIVERY_ENABLED?: string;
+  DELIVERY_PROVIDER?: string;
+  FORMCARRY_FORM_ID?: string;
   MAIL_FROM?: string;
   MAIL_TO?: string;
 }
