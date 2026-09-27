@@ -12,3 +12,9 @@ test-results/
 playwright-report/
 .DS_Store
 *.tsbuildinfo
+.wrangler/
+.npm-cache/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+cloudflare/*.local.jsonc

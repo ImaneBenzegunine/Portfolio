@@ -12,3 +12,8 @@ test-results
 playwright-report
 sources
 *.tsbuildinfo
+.wrangler
+**/.wrangler
+.npm-cache
+.dev.vars
+.dev.vars.*

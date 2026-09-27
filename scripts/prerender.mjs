@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { render, pageInfo, profile } from "../.render/prerender.js";
 import sharp from "sharp";
 await sharp("public/social.svg").png().toFile("dist/social.png");
@@ -55,6 +55,9 @@ for (const [path, info] of Object.entries(allPages)) {
     template.replace("<!--head-->", head).replace("<!--app-->", render(path)),
   );
 }
+// Pages requires a root 404.html to disable its implicit SPA fallback.
+// Keep /404/index.html too: Nginx uses it in the Docker deployment.
+await copyFile("dist/404/index.html", "dist/404.html");
 await writeFile(
   "dist/sitemap.xml",
   `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${Object.keys(

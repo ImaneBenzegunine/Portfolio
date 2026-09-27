@@ -21,7 +21,7 @@ These are owner-provided claims, not independently audited metrics. Public pages
 
 - [ ] Supply the real CV PDF. Place it at `public/cv/Imane-Benzegunine-CV.pdf`, review its public contact details, and set `CV_AVAILABLE=true`. The build fails if that flag is enabled without a valid PDF header. Until then the CV page offers a request action and no fake download.
 - [ ] Supply any remaining LinkedIn material needed for education, community, and credential details. Experience/project copy has now been supplied directly.
-- [ ] Confirm the proposed domain **imanbenzegunine.com**. Possible alternative spelling: **imanebenzegunine.com**. The chosen spelling has NOT been silently changed, purchased, or connected.
+- [x] Owner confirmed the domain spelling **imanebenzegunine.com**. Project configuration has been updated; the domain has not been purchased or connected.
 - [ ] Confirm the public contact email. `PUBLIC_EMAIL` is empty; no guessed email is published. Email in the navigation currently routes to the contact page.
 - [ ] Confirm location, target roles beyond Data Engineer, work preferences, and availability. These have not been inferred from older third-party profiles.
 - [ ] Confirm education degree title, specialization, dates, and graduation status at ENSA Berrechid. Only the institution is stated.

@@ -1013,7 +1013,10 @@ function CV() {
     </>
   );
 }
-type ContactConfig = { mode: "local" | "smtp"; retentionDays: number };
+type ContactConfig = {
+  mode: "local" | "smtp" | "email";
+  retentionDays: number;
+};
 function Contact() {
   const [kind, setKind] = useState("hiring");
   const [config, setConfig] = useState<ContactConfig | null>(null);
@@ -1308,8 +1311,9 @@ function Contact() {
           )}
           <p className="privacy-notice">
             Your details are used to respond to this inquiry.{" "}
-            {config?.mode === "smtp" &&
-              `Undelivered messages are retained for up to ${config.retentionDays} days; delivered messages are removed from this server. `}
+            {config &&
+              config.mode !== "local" &&
+              `Undelivered messages are retained for up to ${config.retentionDays} days; messages are removed from the active queue after the email provider accepts them. `}
             <Link to="/privacy">Read the privacy notice</Link>.
           </p>
           <button
@@ -1358,9 +1362,9 @@ function Privacy() {
           When email delivery is configured, messages are queued privately until
           the mail provider accepts them, then removed from the application
           database. Unsent messages expire after the configured retention
-          period, shown on the form. SMTP acceptance does not guarantee inbox
-          delivery. Mailbox copies follow the owner’s mailbox retention policy,
-          which must be finalized before publication.
+          period, shown on the form. Provider acceptance does not guarantee
+          inbox delivery. Mailbox copies follow the owner’s mailbox retention
+          policy, which must be finalized before publication.
         </p>
         <h2>Spam protection & storage</h2>
         <p>
@@ -1368,7 +1372,9 @@ function Privacy() {
           limiting. Raw addresses and form content are not written to
           application logs. There are no advertising cookies or analytics
           trackers. Protected operational backups may retain data until their
-          scheduled deletion.
+          scheduled deletion. On the Cloudflare deployment, Cloudflare processes
+          submissions and email delivery; its database recovery history can
+          retain deleted records for an additional seven days on the free plan.
         </p>
         <h2>Appearance preference</h2>
         <p>

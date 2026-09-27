@@ -1,5 +1,10 @@
 # Imane Benzegunine — personal portfolio
 
+**Cloudflare Pages Free deployment:** see [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md)
+for Git integration, D1, the scheduled email Worker, encrypted secrets, domain
+setup and verification. This is a separate deployment path; the Docker setup
+below remains available for local development and VM hosting.
+
 React + TypeScript portfolio with 22 pre-rendered routes, a private contact API, and production Docker services. Local URL: **http://localhost:8088**. This is Imane’s personal site, with Data Engineering as its primary focus.
 
 **Content is still awaiting owner verification.** The attachment contained the brief only, not the CV PDF. See [CONTENT_REVIEW.md](CONTENT_REVIEW.md) for the exact missing information, source differences, and publication checklist. The real PDF download and direct email cannot be completed without the PDF and email address. No domain, Azure resource, image push, or public deployment was performed.
@@ -51,7 +56,7 @@ To publish a real CV, add `public/cv/Imane-Benzegunine-CV.pdf`, set `CV_AVAILABL
 
 To add an article, append a typed note with `slug`, `title`, ISO `date`, `summary`, `paragraphs`, and `published: true`. Only published notes get routes and sitemap entries. Rebuild after edits. No example article is published.
 
-`SITE_URL` defaults to the requested **https://imanbenzegunine.com**. Confirm whether you prefer **imanebenzegunine.com**. This is metadata configuration, not domain registration or DNS configuration. Use an origin without a trailing path. Set the final canonical URL before the public build. Changing `SITE_URL`, `PUBLIC_EMAIL`, or `CV_AVAILABLE` requires rebuilding the frontend.
+`SITE_URL` defaults to the owner-confirmed **https://imanebenzegunine.com**. This is metadata configuration, not domain registration or DNS configuration. Use an origin without a trailing path. Set the final canonical URL before the public build. Changing `SITE_URL`, `PUBLIC_EMAIL`, or `CV_AVAILABLE` requires rebuilding the frontend.
 
 ## Environment and email
 
@@ -175,7 +180,7 @@ On the VM, place production `.env` outside version control with restrictive perm
 
 ### Domain, HTTPS, and ongoing costs
 
-After domain spelling approval and separate purchase authorization, point the apex A record to the VM’s static public IP; point `www` to the chosen canonical host. Use a host-installed reverse proxy such as Caddy with the supplied `deploy/Caddyfile` template to terminate HTTPS and forward to `127.0.0.1:8088`. Set its `PORTFOLIO_DOMAIN` environment variable. Open only 80/443 publicly, restrict SSH to administrative access, and keep 8088/3001 private. Caddy’s certificate state lives on the host under its service data directory and also needs backup. No third application service or extra dummy volume is needed. Configure Nginx real-IP trust for the specific proxy address before launch; otherwise the safe default groups requests under the proxy’s address and the five-per-hour limit can affect all visitors. Update PUBLIC_ORIGIN/SITE_URL to HTTPS, confirm redirects, then enable HSTS at the TLS proxy after HTTPS works.
+After separate purchase authorization for **imanebenzegunine.com**, point the apex A record to the VM’s static public IP; point `www` to the chosen canonical host. Use a host-installed reverse proxy such as Caddy with the supplied `deploy/Caddyfile` template to terminate HTTPS and forward to `127.0.0.1:8088`. Set its `PORTFOLIO_DOMAIN` environment variable. Open only 80/443 publicly, restrict SSH to administrative access, and keep 8088/3001 private. Caddy’s certificate state lives on the host under its service data directory and also needs backup. No third application service or extra dummy volume is needed. Configure Nginx real-IP trust for the specific proxy address before launch; otherwise the safe default groups requests under the proxy’s address and the five-per-hour limit can affect all visitors. Update PUBLIC_ORIGIN/SITE_URL to HTTPS, confirm redirects, then enable HSTS at the TLS proxy after HTTPS works.
 
 Container Apps has managed certificate/custom domain support with DNS verification requirements; use the currently documented A/CNAME/TXT records and certificate validation access rules. [Microsoft custom domains guide](https://learn.microsoft.com/en-us/azure/container-apps/custom-domains-managed-certificates).
 

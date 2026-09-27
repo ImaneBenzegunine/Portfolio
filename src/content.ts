@@ -11,7 +11,7 @@ export const profile = {
   },
   role: "Data Engineer",
   email: import.meta.env.VITE_PUBLIC_EMAIL || "",
-  siteUrl: import.meta.env.VITE_SITE_URL || "https://imanbenzegunine.com",
+  siteUrl: import.meta.env.VITE_SITE_URL || "https://imanebenzegunine.com",
   cvAvailable: import.meta.env.VITE_CV_AVAILABLE === "true",
   cvPath: "/cv/Imane-Benzegunine-CV.pdf",
   linkedin: "https://www.linkedin.com/in/imane-benzegunine/",

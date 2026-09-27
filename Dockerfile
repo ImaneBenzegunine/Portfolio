@@ -7,7 +7,7 @@ COPY tsconfig.json vite.config.ts index.html ./
 COPY src ./src
 COPY public ./public
 COPY scripts/prerender.mjs ./scripts/prerender.mjs
-ARG SITE_URL=https://imanbenzegunine.com
+ARG SITE_URL=https://imanebenzegunine.com
 ARG PUBLIC_EMAIL=
 ARG CV_AVAILABLE=false
 ENV VITE_SITE_URL=$SITE_URL VITE_PUBLIC_EMAIL=$PUBLIC_EMAIL VITE_CV_AVAILABLE=$CV_AVAILABLE
