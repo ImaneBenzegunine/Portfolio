@@ -37,7 +37,7 @@ export function HomePortrait() {
       <div className="portrait-caption">
         <div>
           <strong>Imane Benzegunine</strong>
-          <span>Data Engineer</span>
+          <span>Data Engineer &amp; AI Engineer</span>
         </div>
         <Link to="/about" aria-label="More about Imane">
           <ArrowUpRight size={24} />
