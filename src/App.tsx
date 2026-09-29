@@ -381,15 +381,6 @@ function Home() {
         </div>
         <HomePortrait />
       </section>
-      <div className="evidence-strip">
-        <span>EXPERIENCE & LEARNING</span>
-        <span>Inetum</span>
-        <span>Akkan Crowdfunding</span>
-        <span>ENSA Berrechid</span>
-        <Link to="/certifications">
-          <ShieldCheck size={20} /> Microsoft Fabric <Arrow />
-        </Link>
-      </div>
       <section className="section">
         <div className="section-heading">
           <div>
