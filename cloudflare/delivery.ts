@@ -1,6 +1,13 @@
 import { contactSchema } from "../backend/validation.mjs";
 import type { DeliveryEnv, Inquiry, OwnerEmail } from "./types.ts";
-import { deliveryConfigured, providerName, ProviderError, sendFormcarry, FREE_WINDOW, FREE_ATTEMPTS } from "./provider.ts";
+import {
+  deliveryConfigured,
+  providerName,
+  ProviderError,
+  sendFormcarry,
+  FREE_WINDOW,
+  FREE_ATTEMPTS,
+} from "./provider.ts";
 
 const LEASE_MS = 10 * 60000;
 const MAX_ATTEMPTS = 8;
@@ -23,13 +30,19 @@ export function ownerEmail(row: Inquiry, env: DeliveryEnv): OwnerEmail {
   };
 }
 
-export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = fetch) {
+export async function deliverOne(
+  env: DeliveryEnv,
+  now = Date.now(),
+  fetcher = fetch,
+) {
   const db = env.CONTACT_DB;
   // Run retention even when sending is disabled.
   await db.batch([
     db.prepare("DELETE FROM inquiries WHERE expires_at <= ?").bind(now),
     db.prepare("DELETE FROM rate_limits WHERE expires <= ?").bind(now),
-    db.prepare("DELETE FROM delivery_attempts WHERE created <= ?").bind(now - FREE_WINDOW),
+    db
+      .prepare("DELETE FROM delivery_attempts WHERE created <= ?")
+      .bind(now - FREE_WINDOW),
     db
       .prepare(
         `UPDATE inquiries SET status='failed', lease_token=NULL,
@@ -42,7 +55,8 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = f
     return;
   }
   const provider = providerName(env);
-  const control = await db.prepare("SELECT provider, blocked_until FROM worker_state WHERE id=1")
+  const control = await db
+    .prepare("SELECT provider, blocked_until FROM worker_state WHERE id=1")
     .first<{ provider: string; blocked_until: number }>();
   if (control?.provider === provider && control.blocked_until > now) return;
   await db
@@ -69,13 +83,41 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = f
     .first<Inquiry>();
   if (!row) return;
   if (provider === "formcarry") {
-    const reserved = await db.prepare(`INSERT INTO delivery_attempts (id,created)
-      SELECT ?,? WHERE (SELECT COUNT(*) FROM delivery_attempts WHERE created>?) < ? RETURNING id`)
-      .bind(token, now, now - FREE_WINDOW, FREE_ATTEMPTS).first();
+    const prior = await db
+      .prepare("SELECT id FROM delivery_attempts WHERE id=?")
+      .bind(row.id)
+      .first();
+    if (prior) {
+      await db
+        .prepare(
+          "UPDATE inquiries SET status='failed',lease_token=NULL,last_error='formcarry_outcome_requires_review' WHERE id=? AND lease_token=?",
+        )
+        .bind(row.id, token)
+        .run();
+      await db
+        .prepare(
+          "UPDATE worker_state SET last_tick=0,blocked_until=? WHERE id=1",
+        )
+        .bind(now + FREE_WINDOW)
+        .run();
+      return;
+    }
+    const reserved = await db
+      .prepare(
+        `INSERT INTO delivery_attempts (id,created)
+      SELECT ?,? WHERE (SELECT COUNT(*) FROM delivery_attempts WHERE created>?) < ? RETURNING id`,
+      )
+      .bind(row.id, now, now - FREE_WINDOW, FREE_ATTEMPTS)
+      .first();
     if (!reserved) {
-      await db.prepare(`UPDATE inquiries SET status='pending', attempts=attempts-1,
+      await db
+        .prepare(
+          `UPDATE inquiries SET status='pending', attempts=attempts-1,
         lease_token=NULL, lease_until=0, last_error='free_allowance_exhausted'
-        WHERE id=? AND lease_token=?`).bind(row.id, token).run();
+        WHERE id=? AND lease_token=?`,
+        )
+        .bind(row.id, token)
+        .run();
       await db.prepare("UPDATE worker_state SET last_tick=0 WHERE id=1").run();
       return;
     }
@@ -84,10 +126,21 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = f
     if (provider === "formcarry") await sendFormcarry(row, env, fetcher);
     else await env.EMAIL!.send(ownerEmail(row, env));
   } catch (error) {
-    const permanent = error instanceof ProviderError && error.permanent;
-    if (error instanceof ProviderError && error.pauseMs > 0)
-      await db.prepare("UPDATE worker_state SET last_tick=0,blocked_until=? WHERE id=1")
-        .bind(now + error.pauseMs).run();
+    const permanent =
+      provider === "formcarry" ||
+      (error instanceof ProviderError && error.permanent);
+    if (
+      provider === "formcarry" ||
+      (error instanceof ProviderError && error.pauseMs > 0)
+    )
+      await db
+        .prepare(
+          "UPDATE worker_state SET last_tick=0,blocked_until=? WHERE id=1",
+        )
+        .bind(
+          now + (error instanceof ProviderError ? error.pauseMs : FREE_WINDOW),
+        )
+        .run();
     await db
       .prepare(
         `UPDATE inquiries SET status=?, next_attempt=?, lease_until=0,
@@ -103,7 +156,8 @@ export async function deliverOne(env: DeliveryEnv, now = Date.now(), fetcher = f
     return;
   }
   // Acceptance is not inbox delivery. Delete only after send() resolves.
-  // If this write fails, keep the lease: retry later may duplicate the email.
+  // Formcarry reservations prevent replay even if this acknowledgement fails.
+  // Native email retains at-least-once retry behavior.
   await db
     .prepare("DELETE FROM inquiries WHERE id=? AND lease_token=?")
     .bind(row.id, token)

@@ -1086,6 +1086,7 @@ function Contact() {
       });
       const result = await response.json();
       if (!response.ok) {
+        if (response.status === 503) setConfigError(true);
         if (result.errors) setErrors(result.errors);
         throw new Error(
           result.message ||
@@ -1199,143 +1200,158 @@ function Contact() {
             information out of your inquiry.
           </p>
         </aside>
-        <form
-          ref={formRef}
-          className="contact-form"
-          onSubmit={submit}
-          noValidate
-        >
-          <fieldset>
-            <legend>What brings you here?</legend>
-            <div className="inquiry-types">
-              {[
-                ["hiring", "Hiring opportunity"],
-                ["collaboration", "Project collaboration"],
-              ].map(([value, label]) => (
-                <label className={kind === value ? "selected" : ""} key={value}>
-                  <input
-                    type="radio"
-                    name="kind"
-                    value={value}
-                    checked={kind === value}
-                    onChange={() => setKind(value)}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-          <p className="required-note">Fields marked * are required.</p>
-          <div className="form-row">
-            {field("name", "Your name", {
-              required: true,
-              max: 100,
-              placeholder: "Your name",
-            })}
-            {field("email", "Email address", {
-              required: true,
-              type: "email",
-              max: 254,
-              placeholder: "you@example.com",
-            })}
+        {!config ? (
+          <div className="contact-form">
+            <h2>Connect on LinkedIn</h2>
+            <p>
+              {configError
+                ? "The contact form is temporarily unavailable. Please reach out on LinkedIn."
+                : "You can reach me on LinkedIn while contact availability is checked."}
+            </p>
+            <External href={profile.linkedin}>Message me on LinkedIn</External>
           </div>
-          {field("phone", "Phone number", { type: "tel", max: 40 })}
-          {kind === "collaboration" && (
-            <div className="collaboration-fields">
-              <div className="form-row">
-                {field("projectType", "Project type", {
-                  placeholder: "e.g. Data pipeline",
-                })}
-                {field("timeline", "Timeline", {
-                  placeholder: "e.g. Exploring options",
-                })}
+        ) : (
+          <form
+            ref={formRef}
+            className="contact-form"
+            onSubmit={submit}
+            noValidate
+          >
+            <fieldset>
+              <legend>What brings you here?</legend>
+              <div className="inquiry-types">
+                {[
+                  ["hiring", "Hiring opportunity"],
+                  ["collaboration", "Project collaboration"],
+                ].map(([value, label]) => (
+                  <label
+                    className={kind === value ? "selected" : ""}
+                    key={value}
+                  >
+                    <input
+                      type="radio"
+                      name="kind"
+                      value={value}
+                      checked={kind === value}
+                      onChange={() => setKind(value)}
+                    />
+                    {label}
+                  </label>
+                ))}
               </div>
-              {field("projectLink", "Project link", {
-                type: "url",
-                max: 500,
-                placeholder: "https://",
+            </fieldset>
+            <p className="required-note">Fields marked * are required.</p>
+            <div className="form-row">
+              {field("name", "Your name", {
+                required: true,
+                max: 100,
+                placeholder: "Your name",
+              })}
+              {field("email", "Email address", {
+                required: true,
+                type: "email",
+                max: 254,
+                placeholder: "you@example.com",
               })}
             </div>
-          )}
-          <div className="form-field">
-            <label htmlFor="message">
-              Your message <span aria-hidden="true">*</span>
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              rows={5}
-              required
-              minLength={20}
-              maxLength={5000}
-              placeholder="Tell me about the role or project you have in mind…"
-              aria-invalid={!!errors.message}
-              aria-describedby={
-                errors.message ? "message-error" : "message-hint"
-              }
-            />
-            {errors.message ? (
-              <span id="message-error" className="field-error">
-                {errors.message}
-              </span>
-            ) : (
-              <span id="message-hint" className="input-hint">
-                20–5,000 characters
-              </span>
+            {field("phone", "Phone number", { type: "tel", max: 40 })}
+            {kind === "collaboration" && (
+              <div className="collaboration-fields">
+                <div className="form-row">
+                  {field("projectType", "Project type", {
+                    placeholder: "e.g. Data pipeline",
+                  })}
+                  {field("timeline", "Timeline", {
+                    placeholder: "e.g. Exploring options",
+                  })}
+                </div>
+                {field("projectLink", "Project link", {
+                  type: "url",
+                  max: 500,
+                  placeholder: "https://",
+                })}
+              </div>
             )}
-          </div>
-          <div className="honeypot" aria-hidden="true">
-            <label htmlFor="website">Leave this empty</label>
-            <input
-              tabIndex={-1}
-              autoComplete="off"
-              id="website"
-              name="website"
-            />
-          </div>
-          {config?.mode === "local" && (
-            <div className="mode-notice">
-              <strong>Local test mode</strong>
-              <p>
-                No email will be sent. Use synthetic details only; test
-                inquiries are stored on this machine for up to{" "}
-                {config.retentionDays} days.
-              </p>
+            <div className="form-field">
+              <label htmlFor="message">
+                Your message <span aria-hidden="true">*</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows={5}
+                required
+                minLength={20}
+                maxLength={5000}
+                placeholder="Tell me about the role or project you have in mind…"
+                aria-invalid={!!errors.message}
+                aria-describedby={
+                  errors.message ? "message-error" : "message-hint"
+                }
+              />
+              {errors.message ? (
+                <span id="message-error" className="field-error">
+                  {errors.message}
+                </span>
+              ) : (
+                <span id="message-hint" className="input-hint">
+                  20–5,000 characters
+                </span>
+              )}
             </div>
-          )}
-          {configError && (
-            <p role="alert" className="field-error">
-              The form is temporarily unavailable. Please use LinkedIn to
-              connect.
+            <div className="honeypot" aria-hidden="true">
+              <label htmlFor="website">Leave this empty</label>
+              <input
+                tabIndex={-1}
+                autoComplete="off"
+                id="website"
+                name="website"
+              />
+            </div>
+            {config?.mode === "local" && (
+              <div className="mode-notice">
+                <strong>Local test mode</strong>
+                <p>
+                  No email will be sent. Use synthetic details only; test
+                  inquiries are stored on this machine for up to{" "}
+                  {config.retentionDays} days.
+                </p>
+              </div>
+            )}
+            {configError && (
+              <p role="alert" className="field-error">
+                The form is temporarily unavailable. Please use LinkedIn to
+                connect.
+              </p>
+            )}
+            <p className="privacy-notice">
+              Your details are used to respond to this inquiry.{" "}
+              {config &&
+                config.mode !== "local" &&
+                `Undelivered messages are retained for up to ${config.retentionDays} days; messages are removed from the active queue after the email provider accepts them. `}
+              <Link to="/privacy">Read the privacy notice</Link>.
             </p>
-          )}
-          <p className="privacy-notice">
-            Your details are used to respond to this inquiry.{" "}
-            {config &&
-              config.mode !== "local" &&
-              `Undelivered messages are retained for up to ${config.retentionDays} days; messages are removed from the active queue after the email provider accepts them. `}
-            <Link to="/privacy">Read the privacy notice</Link>.
-          </p>
-          <button
-            disabled={status === "loading" || !config}
-            className="button primary"
-            type="submit"
-          >
-            {status === "loading"
-              ? "Submitting…"
-              : config?.mode === "local"
-                ? "Send test inquiry"
-                : "Send inquiry"}
-            <Arrow />
-          </button>
-          <div
-            role={status === "error" ? "alert" : "status"}
-            aria-live="polite"
-            className={"form-feedback " + status}
-          >
-            {feedback}
-          </div>
-        </form>
+            <button
+              disabled={status === "loading" || !config || configError}
+              className="button primary"
+              type="submit"
+            >
+              {status === "loading"
+                ? "Submitting…"
+                : config?.mode === "local"
+                  ? "Send test inquiry"
+                  : "Send inquiry"}
+              <Arrow />
+            </button>
+            <div
+              role={status === "error" ? "alert" : "status"}
+              aria-live="polite"
+              className={"form-feedback " + status}
+            >
+              {feedback}
+            </div>
+          </form>
+        )}
       </div>
     </>
   );
@@ -1363,7 +1379,10 @@ function Privacy() {
           the mail provider accepts them, then removed from the application
           database. Unsent messages expire after the configured retention
           period, shown on the form. Provider acceptance does not guarantee
-          inbox delivery. Mailbox copies follow the owner’s mailbox retention
+          inbox delivery. For the pages.dev launch, Formcarry processes
+          submissions and keeps a separate archive; spam filtering may suppress
+          notifications. Archive deletion must be requested separately from
+          queue deletion. Mailbox copies follow the owner’s mailbox retention
           policy, which must be finalized before publication.
         </p>
         <h2>Spam protection & storage</h2>

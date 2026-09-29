@@ -65,16 +65,17 @@ const dbArgs = [
   state,
 ];
 // Reset only this isolated synthetic database, so repeated runs give the same result.
-const migration = await readFile(
+let migration = await readFile(
   "cloudflare/migrations/0001_contact.sql",
   "utf8",
 );
+migration += await readFile("cloudflare/migrations/0002_formcarry.sql", "utf8");
 const seed = resolve(".wrangler/pages-test.sql");
 await writeFile(
   seed,
   `DROP TABLE IF EXISTS inquiries; DROP TABLE IF EXISTS rate_limits;
-  DROP TABLE IF EXISTS worker_state; ${migration}
-  INSERT INTO worker_state VALUES(1, ${Date.now()});`,
+  DROP TABLE IF EXISTS worker_state; DROP TABLE IF EXISTS delivery_attempts; ${migration}
+  INSERT INTO worker_state(id,last_tick,provider) VALUES(1, ${Date.now()},'formcarry');`,
 );
 await command([...dbArgs, "--file", seed]);
 const server = cli([
@@ -131,7 +132,7 @@ try {
     assert.ok(html.includes("<h1>"), path);
     assert.ok(
       html.includes(
-        `rel="canonical" href="https://imanebenzegunine.com${path === "/" ? "/" : path}"`,
+        `rel="canonical" href="${new URL([...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)][0][1]).origin}${path === "/" ? "/" : path}"`,
       ),
       path,
     );
@@ -225,6 +226,17 @@ try {
       await expect(page.getByRole("status")).toContainText(
         "queued for email delivery",
       );
+      await command([
+        ...dbArgs,
+        "--command",
+        `UPDATE worker_state SET blocked_until=${Date.now() + 86400000} WHERE id=1`,
+      ]);
+      await page.reload();
+      await expect(
+        page.getByRole("link", { name: "Message me on LinkedIn" }),
+      ).toBeVisible();
+      await expect(page.locator("form")).toHaveCount(0);
+      assert.equal((await fetch(origin + "/api/config")).status, 503);
       assert.deepEqual(errors, []);
       console.log(
         "Chromium form integration passed against local Pages and D1.",

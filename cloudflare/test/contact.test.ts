@@ -8,7 +8,7 @@ import { onRequest as unknownRoute } from "../../functions/api/[[path]].ts";
 import type { ContactEnv, DeliveryEnv, Inquiry, OwnerEmail } from "../types.ts";
 
 const now = Date.UTC(2026, 8, 27, 12, 10);
-const origin = "https://imanebenzegunine.com";
+const origin = "https://portfolio-test.pages.dev";
 const payload = {
   name: "Synthetic Tester",
   email: "visitor@example.invalid",
@@ -38,8 +38,12 @@ before(async () => {
     }),
   );
   db = (await mf.getD1Database("CONTACT_DB")) as unknown as D1Database;
-  const sql = await readFile(
+  let sql = await readFile(
     new URL("../migrations/0001_contact.sql", import.meta.url),
+    "utf8",
+  );
+  sql += await readFile(
+    new URL("../migrations/0002_formcarry.sql", import.meta.url),
     "utf8",
   );
   await db.batch(
@@ -54,13 +58,17 @@ after(async () => {
 });
 beforeEach(async () => {
   await db.batch(
-    ["inquiries", "rate_limits", "worker_state"].map((table) =>
-      db.prepare(`DELETE FROM ${table}`),
+    ["inquiries", "rate_limits", "worker_state", "delivery_attempts"].map(
+      (table) => db.prepare(`DELETE FROM ${table}`),
     ),
   );
-  await db.prepare("INSERT INTO worker_state VALUES (1,?)").bind(now).run();
+  await db
+    .prepare("INSERT INTO worker_state (id,last_tick) VALUES (1,?)")
+    .bind(now)
+    .run();
   env = {
     CONTACT_DB: db,
+    DELIVERY_PROVIDER: "cloudflare",
     CONTACT_ENABLED: "true",
     PUBLIC_ORIGIN: origin,
     RATE_LIMIT_SALT: "synthetic-salt-only-32-characters-minimum",
@@ -69,6 +77,7 @@ beforeEach(async () => {
   sent = [];
   delivery = {
     CONTACT_DB: db,
+    DELIVERY_PROVIDER: "cloudflare",
     DELIVERY_ENABLED: "true",
     MAIL_FROM: "sender@example.invalid",
     MAIL_TO: "owner@example.invalid",
@@ -456,4 +465,115 @@ test("a stale send completion cannot delete a newer claim", async () => {
   };
   await deliverOne(delivery, now);
   assert.equal((await rows())[0].lease_token, "newer-claim");
+});
+
+async function formcarrySetup() {
+  env.DELIVERY_PROVIDER = "formcarry";
+  delivery = {
+    CONTACT_DB: db,
+    DELIVERY_ENABLED: "true",
+    DELIVERY_PROVIDER: "formcarry",
+    FORMCARRY_FORM_ID: "synthetic-form",
+  };
+  await db.prepare("UPDATE worker_state SET provider='formcarry'").run();
+}
+test("Formcarry JSON contract maps validated fields and email Reply-To; acceptance is not delivery", async () => {
+  await formcarrySetup();
+  const id = await enqueue();
+  let calls = 0;
+  await deliverOne(delivery, now, async (url, init) => {
+    calls++;
+    assert.equal(url, "https://formcarry.com/s/synthetic-form");
+    assert.equal(init?.method, "POST");
+    assert.equal(new Headers(init?.headers).get("accept"), "application/json");
+    const data = JSON.parse(String(init?.body));
+    assert.equal(data.email, payload.email);
+    assert.equal(data.name, payload.name);
+    assert.equal(data.message, payload.message);
+    assert.equal(data.inquiryId, id);
+    assert.equal(data._gotcha, "");
+    assert.equal(data.startedAt, undefined);
+    assert.equal(data.to, undefined);
+    return Response.json({ code: 200 });
+  });
+  assert.equal(calls, 1);
+  assert.equal((await rows()).length, 0);
+  assert.equal(
+    await db.prepare("SELECT COUNT(*) n FROM delivery_attempts").first("n"),
+    1,
+  );
+});
+for (const outcome of [
+  "quota-http",
+  "quota-json",
+  "server-error",
+  "bad-json",
+  "network",
+]) {
+  test(`Formcarry ${outcome} retains inquiry, disables contact, never blindly retries`, async () => {
+    await formcarrySetup();
+    await enqueue();
+    let calls = 0;
+    const fetcher = async () => {
+      calls++;
+      if (outcome === "network") throw Error("synthetic timeout");
+      if (outcome === "bad-json") return new Response("unknown");
+      return Response.json(
+        { code: outcome === "server-error" ? 500 : 429 },
+        { status: outcome === "quota-http" ? 429 : 200 },
+      );
+    };
+    await deliverOne(delivery, now, fetcher);
+    assert.equal((await rows())[0].status, "failed");
+    assert.equal((await config(new Request(origin), env, now)).status, 503);
+    assert.equal((await contact(request(), env, now)).status, 503);
+    await deliverOne(delivery, now + DAY, fetcher);
+    assert.equal(calls, 1);
+  });
+}
+test("Formcarry acknowledgement failure and expired lease cannot duplicate an accepted submission", async () => {
+  await formcarrySetup();
+  await enqueue();
+  let calls = 0;
+  const fetcher = async () => {
+    calls++;
+    return Response.json({ code: 200 });
+  };
+  const failedDb = new Proxy(db, {
+    get(target, key) {
+      if (key === "prepare")
+        return (sql: string) => {
+          if (sql.startsWith("DELETE FROM inquiries WHERE id="))
+            throw Error("ack failure");
+          return target.prepare(sql);
+        };
+      if (key === "batch") return target.batch.bind(target);
+      return Reflect.get(target, key);
+    },
+  });
+  await assert.rejects(
+    deliverOne({ ...delivery, CONTACT_DB: failedDb }, now, fetcher),
+  );
+  await deliverOne(delivery, now + 600001, fetcher);
+  assert.equal(calls, 1);
+  assert.equal(
+    (await rows())[0].last_error,
+    "formcarry_outcome_requires_review",
+  );
+});
+test("Formcarry free allowance includes queued messages and attempts, atomically", async () => {
+  await formcarrySetup();
+  await db
+    .prepare(
+      `WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<49)
+    INSERT INTO delivery_attempts(id,created) SELECT CAST(x AS TEXT),? FROM n`,
+    )
+    .bind(now)
+    .run();
+  const responses = await Promise.all([
+    contact(request(), env, now),
+    contact(request(payload, "192.0.2.2"), env, now),
+  ]);
+  assert.deepEqual(responses.map((r) => r.status).sort(), [202, 503]);
+  assert.equal((await config(new Request(origin), env, now)).status, 503);
 });

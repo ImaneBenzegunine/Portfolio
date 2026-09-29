@@ -34,12 +34,12 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9.0.0",
-    "miniflare": "^5.20260926.0-alpha",
+    "miniflare": "^5.20260926.1-alpha",
     "prettier": "^3.9.9",
     "sharp": "^0.35.4",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^6.0.0",
-    "wrangler": "^4.142.0"
+    "wrangler": "^4.144.0"
   }
 }

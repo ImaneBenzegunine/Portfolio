@@ -56,7 +56,7 @@ To publish a real CV, add `public/cv/Imane-Benzegunine-CV.pdf`, set `CV_AVAILABL
 
 To add an article, append a typed note with `slug`, `title`, ISO `date`, `summary`, `paragraphs`, and `published: true`. Only published notes get routes and sitemap entries. Rebuild after edits. No example article is published.
 
-`SITE_URL` defaults to the owner-confirmed **https://imanebenzegunine.com**. This is metadata configuration, not domain registration or DNS configuration. Use an origin without a trailing path. Set the final canonical URL before the public build. Changing `SITE_URL`, `PUBLIC_EMAIL`, or `CV_AVAILABLE` requires rebuilding the frontend.
+`SITE_URL` defaults to **http://localhost:8088** for Docker. For the free Pages launch, follow [CLOUDFLARE_DEPLOYMENT.md](CLOUDFLARE_DEPLOYMENT.md) and set `VITE_SITE_URL` to the assigned `https://<project>.pages.dev` URL. The custom domain is not owned. This is metadata configuration, not domain registration or DNS configuration. Use an origin without a trailing path. Set the final canonical URL before the public build. Changing `SITE_URL`, `PUBLIC_EMAIL`, or `CV_AVAILABLE` requires rebuilding the frontend.
 
 ## Environment and email
 

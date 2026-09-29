@@ -28,19 +28,28 @@ function configuration(env: ContactEnv) {
 
 async function workerReady(db: D1Database, now: number, provider: string) {
   const row = await db
-    .prepare("SELECT last_tick, provider, blocked_until FROM worker_state WHERE id=1")
+    .prepare(
+      "SELECT last_tick, provider, blocked_until FROM worker_state WHERE id=1",
+    )
     .first<{ last_tick: number; provider: string; blocked_until: number }>();
   return (
-    row && row.provider === provider && row.blocked_until <= now &&
-    row.last_tick <= now && now - row.last_tick <= HEARTBEAT_MAX_AGE
+    row &&
+    row.provider === provider &&
+    row.blocked_until <= now &&
+    row.last_tick <= now &&
+    now - row.last_tick <= HEARTBEAT_MAX_AGE
   );
 }
 
 async function freeCapacity(db: D1Database, now: number) {
-  const used = await db.prepare(`SELECT
+  const used = await db
+    .prepare(
+      `SELECT
     (SELECT COUNT(*) FROM delivery_attempts WHERE created>?) +
-    (SELECT COUNT(*) FROM inquiries WHERE status!='failed') AS used`)
-    .bind(now - FREE_WINDOW).first<number>("used");
+    (SELECT COUNT(*) FROM inquiries WHERE status!='failed') AS used`,
+    )
+    .bind(now - FREE_WINDOW)
+    .first<number>("used");
   return (used ?? FREE_ATTEMPTS) < FREE_ATTEMPTS;
 }
 
@@ -53,8 +62,13 @@ export async function config(
     return json({ message: "Use GET." }, 405, { Allow: "GET" });
   try {
     const { days } = configuration(env);
-    if (!(await workerReady(env.CONTACT_DB, now, providerName(env)))) return unavailable();
-    if (providerName(env) === "formcarry" && !(await freeCapacity(env.CONTACT_DB, now))) return unavailable();
+    if (!(await workerReady(env.CONTACT_DB, now, providerName(env))))
+      return unavailable();
+    if (
+      providerName(env) === "formcarry" &&
+      !(await freeCapacity(env.CONTACT_DB, now))
+    )
+      return unavailable();
     return json({ mode: "email", retentionDays: days });
   } catch {
     return unavailable();
@@ -175,8 +189,16 @@ export async function contact(
         (SELECT COUNT(*) FROM inquiries WHERE status!='failed') < ?)
       RETURNING id`,
       )
-      .bind(id, JSON.stringify(result.data), now, now + days * DAY, now,
-        providerName(env), now - FREE_WINDOW, FREE_ATTEMPTS)
+      .bind(
+        id,
+        JSON.stringify(result.data),
+        now,
+        now + days * DAY,
+        now,
+        providerName(env),
+        now - FREE_WINDOW,
+        FREE_ATTEMPTS,
+      )
       .first();
     if (!inserted)
       return json(
