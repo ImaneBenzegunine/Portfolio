@@ -18,7 +18,7 @@ function configuration(env: ContactEnv) {
     days < 1 ||
     days > 30 ||
     !env.PUBLIC_ORIGIN ||
-    !["formcarry", "cloudflare"].includes(providerName(env)) ||
+    !["formcarry", "cloudflare", "gmail"].includes(providerName(env)) ||
     origin.origin !== env.PUBLIC_ORIGIN ||
     !["http:", "https:"].includes(origin.protocol)
   )

@@ -1,5 +1,38 @@
 # Cloudflare deployment: launch now, connect a domain later
 
+## Current production setup: Gmail delivery
+
+The live project is `imanebenzegunine` at https://imanebenzegunine.pages.dev.
+`wrangler.toml` defines its production D1 binding and contact settings; preview
+contact remains disabled. The public email is also a source-code default.
+
+Deploy the delivery worker using `cloudflare/wrangler.gmail.jsonc`, not the older
+Formcarry/native-email configurations below. It authenticates to Gmail over TLS
+on port 465 and retains the visitor address as Reply-To. `SMTP_USER` and
+`SMTP_PASS` must be encrypted Worker secrets; never commit the local `.env`.
+Pages separately requires an encrypted `RATE_LIMIT_SALT` of at least 32 characters.
+
+The worker refreshes its readiness heartbeat only after Gmail authentication.
+Unsent inquiries stay in D1 for seven days, with bounded retries. A successful
+send removes the inquiry from the queue; Gmail inbox/spam delivery must still be
+checked separately. SMTP retries can duplicate a message after an uncertain
+connection failure. The worker has no public endpoint.
+
+For updates:
+
+```sh
+npm run typecheck
+npm run test:cloudflare
+npx wrangler deploy --config cloudflare/wrangler.gmail.jsonc
+```
+
+Build the frontend with `VITE_SITE_URL=https://imanebenzegunine.pages.dev`, then
+deploy `dist` to Pages. Commit `wrangler.toml` with the source so future Git builds
+keep the production bindings. Verify `/api/config` returns HTTP 200 with email
+mode before considering contact delivery active.
+
+The sections below describe the previous alternative deployment plans.
+
 Nothing has been deployed, purchased, connected to DNS, or emailed by this change.
 The Docker Compose/Nginx/SQLite/SMTP deployment remains available for local use.
 

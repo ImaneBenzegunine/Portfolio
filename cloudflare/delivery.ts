@@ -124,6 +124,7 @@ export async function deliverOne(
   }
   try {
     if (provider === "formcarry") await sendFormcarry(row, env, fetcher);
+    else if (provider === "gmail") await env.SMTP_SEND!(ownerEmail(row, env));
     else await env.EMAIL!.send(ownerEmail(row, env));
   } catch (error) {
     const permanent =

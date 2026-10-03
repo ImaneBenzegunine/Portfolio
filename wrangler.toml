@@ -1,0 +1,21 @@
+name = "imanebenzegunine"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-29"
+
+[vars]
+CONTACT_ENABLED = "false"
+VITE_SITE_URL = "https://imanebenzegunine.pages.dev"
+VITE_PUBLIC_EMAIL = "benzegunineimane@gmail.com"
+
+[env.production.vars]
+CONTACT_ENABLED = "true"
+PUBLIC_ORIGIN = "https://imanebenzegunine.pages.dev"
+RETENTION_DAYS = "7"
+DELIVERY_PROVIDER = "gmail"
+VITE_SITE_URL = "https://imanebenzegunine.pages.dev"
+VITE_PUBLIC_EMAIL = "benzegunineimane@gmail.com"
+
+[[env.production.d1_databases]]
+binding = "CONTACT_DB"
+database_name = "portfolio-contact"
+database_id = "bcc55b23-a7a7-4e92-ae55-539395b6e224"

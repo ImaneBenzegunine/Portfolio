@@ -31,6 +31,9 @@ export interface OwnerEmail {
 }
 
 export interface DeliveryEnv {
+  SMTP_USER?: string;
+  SMTP_PASS?: string;
+  SMTP_SEND?: (message: OwnerEmail) => Promise<void>;
   CONTACT_DB: D1Database;
   EMAIL?: Pick<SendEmail, "send">;
   DELIVERY_ENABLED?: string;

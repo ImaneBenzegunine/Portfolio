@@ -15,8 +15,8 @@ export function deliveryConfigured(env: DeliveryEnv) {
   if (providerName(env) === "formcarry")
     return formIdValid(env.FORMCARRY_FORM_ID);
   return (
-    providerName(env) === "cloudflare" &&
-    !!env.EMAIL &&
+    ((providerName(env) === "cloudflare" && !!env.EMAIL) ||
+      (providerName(env) === "gmail" && !!env.SMTP_SEND)) &&
     contactSchema.shape.email.safeParse(env.MAIL_FROM).success &&
     contactSchema.shape.email.safeParse(env.MAIL_TO).success
   );

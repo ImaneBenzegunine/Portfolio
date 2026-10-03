@@ -10,7 +10,7 @@ export const profile = {
     position: "50% 100%",
   },
   role: "Data Engineer",
-  email: import.meta.env.VITE_PUBLIC_EMAIL || "",
+  email: import.meta.env.VITE_PUBLIC_EMAIL || "benzegunineimane@gmail.com",
   siteUrl: import.meta.env.VITE_SITE_URL || "http://localhost:8088",
   cvAvailable: true,
   cvPath: "/cv/Imane-Benzegunine-CV.pdf",

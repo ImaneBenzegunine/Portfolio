@@ -164,7 +164,6 @@ function Header() {
           <NavLink to="/projects">Work</NavLink>
           <NavLink to="/about">About</NavLink>
           <NavLink to="/experience">Experience</NavLink>
-          <NavLink to="/notes">Notes</NavLink>
           <NavLink to="/cv">Resume</NavLink>
           <NavLink to="/recruiter" className="recruiter-nav">
             For recruiters <Arrow />
@@ -1195,13 +1194,15 @@ function Contact() {
         </aside>
         {!config ? (
           <div className="contact-form">
-            <h2>Connect on LinkedIn</h2>
+            <h2>Send me an email</h2>
             <p>
               {configError
-                ? "The contact form is temporarily unavailable. Please reach out on LinkedIn."
-                : "You can reach me on LinkedIn while contact availability is checked."}
+                ? "The contact form is temporarily unavailable. You can email me directly, and I’ll reply to your message."
+                : "You can email me directly while contact availability is checked."}
             </p>
-            <External href={profile.linkedin}>Message me on LinkedIn</External>
+            <a className="button primary" href={`mailto:${profile.email}`}>
+              Email me <Mail size={18} aria-hidden="true" />
+            </a>
           </div>
         ) : (
           <form
@@ -1372,11 +1373,9 @@ function Privacy() {
           the mail provider accepts them, then removed from the application
           database. Unsent messages expire after the configured retention
           period, shown on the form. Provider acceptance does not guarantee
-          inbox delivery. For the pages.dev launch, Formcarry processes
-          submissions and keeps a separate archive; spam filtering may suppress
-          notifications. Archive deletion must be requested separately from
-          queue deletion. Mailbox copies follow the owner’s mailbox retention
-          policy, which must be finalized before publication.
+          inbox delivery. Google processes email delivery to my Gmail inbox.
+          Mailbox copies remain separate from the contact queue; you can email
+          me to request their deletion.
         </p>
         <h2>Spam protection & storage</h2>
         <p>
@@ -1406,8 +1405,7 @@ function Privacy() {
               or <a href={"mailto:" + profile.email}>email</a>
             </>
           )}{" "}
-          to request deletion. The final email provider, mailbox policy, and
-          backup retention must be confirmed before this site is published.
+          to request deletion of your inquiry and its mailbox copy.
         </p>
       </div>
     </>

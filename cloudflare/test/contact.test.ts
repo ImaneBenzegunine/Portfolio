@@ -114,6 +114,27 @@ async function enqueue() {
   return ((await response.json()) as { id: string }).id;
 }
 
+test("Gmail queue delivers to owner with visitor Reply-To and requires a ready transport", async () => {
+  env.DELIVERY_PROVIDER = "gmail";
+  delivery.DELIVERY_PROVIDER = "gmail";
+  delivery.EMAIL = undefined;
+  await deliverOne(delivery, now);
+  assert.equal(
+    (await config(new Request(origin + "/api/config"), env, now)).status,
+    503,
+  );
+  delivery.SMTP_SEND = async (mail) => {
+    sent.push(mail);
+  };
+  await deliverOne(delivery, now);
+  await enqueue();
+  await deliverOne(delivery, now);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, "owner@example.invalid");
+  assert.equal(sent[0].replyTo, payload.email);
+  assert.equal((await rows()).length, 0);
+});
+
 test("config discloses only mode and retention; disabled and stale workers fail closed", async () => {
   const response = await config(new Request(origin + "/api/config"), env, now);
   assert.deepEqual(await response.json(), { mode: "email", retentionDays: 7 });
