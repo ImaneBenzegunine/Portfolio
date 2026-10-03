@@ -12,7 +12,7 @@ export const profile = {
   role: "Data Engineer",
   email: import.meta.env.VITE_PUBLIC_EMAIL || "",
   siteUrl: import.meta.env.VITE_SITE_URL || "http://localhost:8088",
-  cvAvailable: import.meta.env.VITE_CV_AVAILABLE === "true",
+  cvAvailable: true,
   cvPath: "/cv/Imane-Benzegunine-CV.pdf",
   linkedin: "https://www.linkedin.com/in/imane-benzegunine/",
   github: "https://github.com/ImaneBenzegunine",
@@ -98,9 +98,9 @@ export const pageInfo: Record<string, { title: string; description: string }> =
         "A space for technical notes from data engineering practice.",
     },
     "/cv": {
-      title: "Curriculum vitae",
+      title: "Resume",
       description:
-        "View and download Imane Benzegunine’s CV when the approved PDF is available.",
+        "View and download Imane Benzegunine’s resume in English, covering data engineering, applied AI, and analytics.",
     },
     "/contact": {
       title: "Let’s talk",

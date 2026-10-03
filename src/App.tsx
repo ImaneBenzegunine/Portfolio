@@ -165,6 +165,7 @@ function Header() {
           <NavLink to="/about">About</NavLink>
           <NavLink to="/experience">Experience</NavLink>
           <NavLink to="/notes">Notes</NavLink>
+          <NavLink to="/cv">Resume</NavLink>
           <NavLink to="/recruiter" className="recruiter-nav">
             For recruiters <Arrow />
           </NavLink>
@@ -233,7 +234,7 @@ function Footer() {
           <Link to="/community">Community</Link>
           <Link to="/certifications">Certifications</Link>
           <Link to="/skills">Skills</Link>
-          <Link to="/cv">CV</Link>
+          <Link to="/cv">Resume</Link>
           <Link to="/contact">Contact</Link>
         </div>
       </div>
@@ -375,7 +376,7 @@ function Home() {
               Explore my work <ArrowRight size={18} />
             </Link>
             <Link className="text-link" to="/cv">
-              View my CV <Arrow />
+              View my resume <Arrow />
             </Link>
           </div>
         </div>
@@ -724,9 +725,9 @@ function Recruiter() {
         <Link className="button primary" to="/contact">
           Discuss a role <Arrow />
         </Link>
-        <Link className="button outline" to="/cv">
-          View CV <FileDown size={17} />
-        </Link>
+        <a className="button outline" href={profile.cvPath} download>
+          Download resume <FileDown size={17} aria-hidden="true" />
+        </a>
       </div>
       <dl className="quick-facts">
         <div>
@@ -967,7 +968,7 @@ function NotePage() {
 function CV() {
   return (
     <>
-      <PageHeading label="CURRICULUM VITAE" title="The full picture.">
+      <PageHeading label="RESUME" title="The full picture.">
         <p>
           Experience, education, and technical capabilities in one document.
         </p>
@@ -976,6 +977,7 @@ function CV() {
         <FileDown size={44} />
         <h2>Imane Benzegunine</h2>
         <p>Data Engineer · Applied AI & analytics</p>
+        <p>English resume · PDF</p>
         {profile.cvAvailable ? (
           <div className="button-row">
             <a
@@ -984,10 +986,10 @@ function CV() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              View CV <Arrow />
+              View resume <Arrow />
             </a>
             <a className="button outline" href={profile.cvPath} download>
-              Download PDF <FileDown size={18} />
+              Download resume <FileDown size={18} aria-hidden="true" />
             </a>
           </div>
         ) : (

@@ -52,7 +52,7 @@ The homepage uses the public profile portrait retrieved from the owner-supplied 
 
 The requested Figma file `AZFeBIHjAXDeJ9bp6IL06M`, node `0:1`, could not be inspected: the web tool and browser embed were blocked. The Figma integration was offered but its connection has not been confirmed. Exact reference-layout adaptation is pending Figma access or an exported screenshot; the current layout must not be described as a verified match.
 
-To publish a real CV, add `public/cv/Imane-Benzegunine-CV.pdf`, set `CV_AVAILABLE=true`, and rebuild. The build checks the `%PDF-` header and fails for a missing/invalid file. The CV page then offers separate view/download buttons. The file becomes a public asset: remove private details before adding it. There is no visitor file upload.
+The supplied English resume is included at `public/cv/Imane-Benzegunine-CV.pdf` and enabled in `src/content.ts`. Recruiters can download it directly or use the Resume page to view it. To update it, replace the PDF and rebuild. The build checks the `%PDF-` header and fails for a missing/invalid file.
 
 To add an article, append a typed note with `slug`, `title`, ISO `date`, `summary`, `paragraphs`, and `published: true`. Only published notes get routes and sitemap entries. Rebuild after edits. No example article is published.
 
@@ -64,7 +64,7 @@ To add an article, append a typed note with `slug`, `title`, ISO `date`, `summar
 | --- | --- |
 | `SITE_URL` | Public canonical origin, compiled into the frontend |
 | `PUBLIC_EMAIL` | Approved public email address; empty until confirmed |
-| `CV_AVAILABLE` | Enables real CV buttons after PDF validation |
+| `CV_AVAILABLE` | Legacy setting; the supplied resume is now enabled in `src/content.ts` |
 | `HOST_PORT` | Local frontend port, default 8088 |
 | `PUBLIC_ORIGIN` | Exact allowed browser origin, default `http://localhost:8088` |
 | `CONTACT_MODE` | `local` (default) or `smtp` |
